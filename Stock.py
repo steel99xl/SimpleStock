@@ -1,17 +1,14 @@
 #!/bin/python3
-
 ## by steel99xl
-
 ## Imports
 import urllib
 import requests
-import sys
+
+
 
 # load urls from config file
 # TODO : ^
-
 Base = "https://iborrowdesk.com/api/ticker/"
-# This is to get info for market price
 PUrl = "https://query1.finance.yahoo.com/v8/finance/chart/"
 PUrl2 = "?region=US&lang=en-US&includePrePost=false&interval=1d&useYfid=true&range=1d&corsDomain=finance.yahoo.com&.tsrc=finance"
 
@@ -42,6 +39,7 @@ def Avg(Ticker):
 
     print("Avg Avalible Volume for the year = "+ str(Total/i))
 
+
 ## Get Open, Current, and Previous Close price
 def Price(Ticker):
     URL = PUrl + Ticker.upper() + PUrl2
@@ -53,13 +51,12 @@ def Price(Ticker):
     OData = Data.split('open')
     OData = OData[1].split('[')
     OData = OData[1].split(',')
-
     print("Previous Close = $" + YPrice)
-    print("Current Price = $" + CPrice)
     print("Open Price = $" + OData[0])
+    print("Current Price = $" + CPrice)
 
 
-## Basic Argument parsing 
+## Basic Argument parsing
 def main(argv):
     if(len(argv) <= 0):
         print("Stock.py [TICKER] <options>")
@@ -67,15 +64,15 @@ def main(argv):
         return 1
     Ticker = argv[0]
 
+
     # lazy way of cheking for args
     try:
         Option = argv[1]
-
     except:
         Option = ""
-
     if(Option == "-a"):
         Avg(Ticker)
     Price(Ticker)
 
 main(sys.argv[1:])
+
