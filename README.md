@@ -6,6 +6,8 @@ such as price, short interests, and avalible volume averages
 python3
 urllib
 
+internet connection
+
 # Usage
 ```bash
 ./Stock.py [TICKER]
