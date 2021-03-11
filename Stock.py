@@ -25,9 +25,13 @@ def Short():
     Info = []
     Data = Url(HighShort)
     Data = Data.split('</tr>')
-    #from 4 - 44
+    
+    
+    # range of usefull informaton if from
+    # 4 to 44 shiping 29 sence its a banner thing 
     i = 4
     while(i <= 44):
+        #
         if(i == 29):
             i += 1
             continue
@@ -92,12 +96,12 @@ def main(argv):
         print(' -a             Get average volume of avalible shares')
         print(' -s               Get list of the most shorted shares')
         return 1
-
-
     if(argv[0] == "-s"):
         Short()
 
     Ticker = argv[0]
+    
+    
     # lazy way of cheking for args
     try:
         Option = argv[1]
