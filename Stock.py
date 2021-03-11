@@ -110,7 +110,7 @@ def main(argv):
     if(Option == "-a"):
         Avg(Ticker)
 
-    if(Ticker != Args[0]):
+    if(Ticker != '-s'):
         Price(Ticker)
 
 main(sys.argv[1:])
