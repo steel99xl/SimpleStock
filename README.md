@@ -3,6 +3,8 @@ Gives simple stock informatoin
 such as price, short interests, and avalible volume averages
 
 The Python version has the most up to date feature set
+
+
 The C++ version is faster but is behind feature wise 
 
 # Requirements
