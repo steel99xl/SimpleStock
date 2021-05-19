@@ -6,6 +6,10 @@ The Python version has the most up to date feature set
 The C++ version is faster but is behind feature wise 
 
 # Requirements
+## General
+internet connection
+
+
 ## Python
 python3
 
