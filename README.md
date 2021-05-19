@@ -12,5 +12,6 @@ internet connection
 ```bash
 ./Stock.py [TICKER]
 ./Stock.py -s       get most shorted stocks
+./Stock.py -f [PortfolioFile] loads and displays portfolio
 
 ```
