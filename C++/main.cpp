@@ -74,7 +74,6 @@ std::string WebHandler(char *Ticker){
 std::string *WebParser(std::string data){
     const char  *delchars = ",:op";
     int delcount[4] = {0,0,0,0};
-    int max = data.length();
 
     // oooo auto thanks clion
     auto *output = new std::string[3];
@@ -86,7 +85,7 @@ std::string *WebParser(std::string data){
     for(int i = 0; i <= strlen(delchars)-1; i ++){
         int j = 0;
         int x = 0;
-        while(j <= max){
+        while(j <= data.length()){
             if(data[j] == delchars[i]){
               x+= 1;
               switch(x){
@@ -176,11 +175,11 @@ void PortfolioView(char *FilePath){
     std::string amount;
     std::string price;
     std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
-    for(int i = 0; i < lines.size(); i++){
+    for(auto & line : lines){
         delcount[0] = 0;
         delcount[1] = 1;
-        for(int j = 0; j < lines[i].length(); j++){
-            if(lines[i][j] == delims[0]){
+        for(int j = 0; j < line.length(); j++){
+            if(line[j] == delims[0]){
                 if(delcount[0] == 0){
                     delcount[0] = j;
                 }
@@ -190,9 +189,9 @@ void PortfolioView(char *FilePath){
 
             }
         }
-        name = lines[i].substr(0,delcount[0]);
-        amount = lines[i].substr(delcount[0]+1,delcount[1]-delcount[0]-1);
-        price = lines[i].substr(delcount[1]+1,lines[i].length()-1);
+        name = line.substr(0,delcount[0]);
+        amount = line.substr(delcount[0]+1,delcount[1]-delcount[0]-1);
+        price = line.substr(delcount[1]+1,line.length()-1);
 
         std::strcpy(ticker,name.c_str());
         data = WebHandler(ticker);
