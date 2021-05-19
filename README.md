@@ -18,7 +18,6 @@ python3
 ## C++
 libcurl
 
-internet connection
 
 # Usage
 ```bash
