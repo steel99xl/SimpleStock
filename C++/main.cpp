@@ -14,21 +14,6 @@
 const char *Yahoo[2] = {"https://query1.finance.yahoo.com/v8/finance/chart/", "?region=US&lang=en-US&includePrePost=false&interval=1d&useYfid=true&range=1d&corsDomain=finance.yahoo.com&.tsrc=finance"};
 
 
-// Visual Progress Bar
-// maybe skipp this
-void ProgressBar(int count, int total, char mark){
-    int barlen = 60;
-    int filledlen = barlen * count / total;
-    //double present = 100.0 * float(count) / float(total);
-    //std::cout << present;
-    //std::cout << filledlen << std::endl;
-    for(int i = 0; i <= filledlen; i++) {
-        printf("..%c",mark);
-    }
-    printf("\r");
-
-}
-
 // Based on example from libcurl
 size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmemb, std::string *s){
     size_t newLength = size*nmemb;
@@ -42,7 +27,7 @@ size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmem
     return newLength;
 }
 
-// Takes Ticker and string to return data to
+// Takes Ticker and returns WebSite data as a String
 std::string WebHandler(char *Ticker){
     CURL *curl;
     CURLcode res;
@@ -55,7 +40,7 @@ std::string WebHandler(char *Ticker){
     curl = curl_easy_init();
 
     if(curl){
-        // takes char * and const char *
+        // takes char * and const char * for url
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
@@ -142,24 +127,51 @@ std::string *WebParser(std::string data){
     return output;
 }
 
-void PortfolioView(char *FilePath){
+std::vector<std::string> LoadPortfolio(char *FilePath) {
     // Loads files and puts each line in a vector
     std::vector<std::string> lines = {};
     std::fstream File;
     //std::cout << FilePath << std::endl;
     File.open(FilePath, std::ios::in);
-    if(File.is_open()){
+    if (File.is_open()) {
         std::string line;
         while (getline(File, line)) {
-        lines.push_back(line);
+            lines.push_back(line);
         }
         File.close();
-    }
-    else{
+    } else {
         std::cout << "ERROR could not load file..." << std::endl;
-        return;
+    }
+    return lines;
+}
+
+std::vector<std::string> ManagePortfolio(std::vector<std::string> lines,char *mode){
+    if(strcmp(mode,"BUY") == 0){
+        std::cout << "BUY" << std::endl;
+    }
+    if(strcmp(mode,"SELL")){
+        std::cout << "SELL" << std::endl;
     }
 
+    return lines;
+}
+
+
+ char* MenuePortfolio(){
+    char *userinput;
+    std::cout << "BUY | SELL | DISPLAY | EXIT" << std::endl;
+
+    std::cout << "# ";
+    std::cin >> userinput;
+
+    for(int i = 0; i < std::strlen(userinput); i++){
+        userinput[i] = toupper(userinput[i]);
+    }
+
+    return userinput;
+}
+
+void DisplayPortfolio(std::vector<std::string> lines){
     // Calculates informaion based on loaded file
     float LossGain = 0.0;
     float TotalValue = 0.0;
@@ -177,7 +189,7 @@ void PortfolioView(char *FilePath){
     std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
     for(auto & line : lines){
         delcount[0] = 0;
-        delcount[1] = 1;
+        delcount[1] = 0;
         for(int j = 0; j < line.length(); j++){
             if(line[j] == delims[0]){
                 if(delcount[0] == 0){
@@ -189,19 +201,21 @@ void PortfolioView(char *FilePath){
 
             }
         }
-        name = line.substr(0,delcount[0]);
-        amount = line.substr(delcount[0]+1,delcount[1]-delcount[0]-1);
-        price = line.substr(delcount[1]+1,line.length()-1);
+        if(delcount[0] != delcount[1]){
+            name = line.substr(0,delcount[0]);
+            amount = line.substr(delcount[0]+1,delcount[1]-delcount[0]-1);
+            price = line.substr(delcount[1]+1,line.length()-1);
 
-        std::strcpy(ticker,name.c_str());
-        data = WebHandler(ticker);
+            std::strcpy(ticker,name.c_str());
+            data = WebHandler(ticker);
 
-        output = WebParser(data);
+            output = WebParser(data);
 
-        LossGain += std::stof(amount) * std::stof(output[0]) - std::stof(amount) * std::stof(price);
-        TotalValue += std::stof(amount) * std::stof(output[0]);
+            LossGain += std::stof(amount) * std::stof(output[0]) - std::stof(amount) * std::stof(price);
+            TotalValue += std::stof(amount) * std::stof(output[0]);
 
-        std::cout << name << " | " << amount << " | " << price << " | " << output[0] << " | " << std::stof(output[0]) - std::stof(price) << std::endl;
+            std::cout << name << " | " << amount << " | " << price << " | " << output[0] << " | " << std::stof(output[0]) - std::stof(price) << std::endl;
+        }
     }
     std::cout << "\n\r------------------------------------------------" << std::endl;
     std::cout << "Initial Value : $" << TotalValue - LossGain << std::endl;
@@ -215,7 +229,6 @@ void PortfolioView(char *FilePath){
 int main(int argc, char *argv[]){
     std::string data;
     std::string *output;
-    int i = 0;
 
 	if(argc < 2){
 		std::cout << "ERROR use : " << std::endl;
@@ -228,13 +241,30 @@ int main(int argc, char *argv[]){
     // Capitalizes user input
     int max = std::strlen(argv[1]);
     char userinput[max];
+    int i = 0;
     while (argv[1][i]){
         userinput[i] = toupper(argv[1][i]);
         i++;
     }
 
     if(std::strcmp(argv[1], "-f") == 0 && argc == 3){
-        PortfolioView(argv[2]);
+        // Load and display file in one call
+        bool View = true;
+        std::vector<std::string> lines;
+
+        lines = LoadPortfolio(argv[2]);
+        char *mode;
+
+        while(View) {
+            mode = MenuePortfolio();
+            if(std::strcmp(mode,"EXIT") == 0){
+                std::cout << "EXITING app..." << std::endl;
+                View = false;
+            }
+            if(std::strcmp(mode,"DISPLAY") == 0){
+                DisplayPortfolio(lines);
+            }
+        }
         return 0;
     }
 
