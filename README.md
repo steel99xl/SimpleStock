@@ -6,7 +6,11 @@ The Python version has the most up to date feature set
 The C++ version is faster but is behind feature wise 
 
 # Requirements
+## Python
 python3
+
+## C++
+libcurl
 
 internet connection
 
