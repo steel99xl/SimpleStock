@@ -145,26 +145,15 @@ std::vector<std::string> LoadPortfolio(char *FilePath) {
     return lines;
 }
 
-std::vector<std::string> ManagePortfolio(std::vector<std::string> lines,char *mode){
-    if(strcmp(mode,"BUY") == 0){
-        std::cout << "BUY" << std::endl;
-    }
-    if(strcmp(mode,"SELL")){
-        std::cout << "SELL" << std::endl;
-    }
 
-    return lines;
-}
-
-
- char* MenuePortfolio(){
-    char *userinput;
-    std::cout << "BUY | SELL | DISPLAY | EXIT" << std::endl;
+ std::string MenuePortfolio(){
+    std::string userinput;
+    std::cout << "RELOAD | DISPLAY | EXIT" << std::endl;
 
     std::cout << "# ";
     std::cin >> userinput;
 
-    for(int i = 0; i < std::strlen(userinput); i++){
+    for(int i = 0; i < userinput.length(); i++){
         userinput[i] = toupper(userinput[i]);
     }
 
@@ -251,17 +240,22 @@ int main(int argc, char *argv[]){
         // Load and display file in one call
         bool View = true;
         std::vector<std::string> lines;
+        std::vector<std::string> buffer;
 
         lines = LoadPortfolio(argv[2]);
-        char *mode;
+        std::string mode;
 
         while(View) {
             mode = MenuePortfolio();
-            if(std::strcmp(mode,"EXIT") == 0){
+            if(std::strcmp(mode.c_str(),"EXIT") == 0){
                 std::cout << "EXITING app..." << std::endl;
                 View = false;
             }
-            if(std::strcmp(mode,"DISPLAY") == 0){
+            if(std::strcmp(mode.c_str(),"DISPLAY") == 0){
+                DisplayPortfolio(lines);
+            }
+            if(std::strcmp(mode.c_str(),"RELOAD") == 0){
+                lines = LoadPortfolio(argv[2]);
                 DisplayPortfolio(lines);
             }
         }
