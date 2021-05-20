@@ -350,6 +350,88 @@ void DisplayPortfolio(std::vector<std::string> names, std::vector<std::string> a
 
 }
 
+
+void Portfolio(char *FilePath){
+    bool View = true;
+    std::vector<std::string> lines;
+    std::vector<std::string> names;
+    std::vector<std::string> amount;
+    std::vector<std::string> price;
+    std::vector<std::string> floatcash;
+    std::vector<std::string> userinput;
+    std::string data;
+    std::string *output;
+
+    // Load Profile
+    lines = LoadPortfolio(FilePath);
+    ParserPortfolio(lines,&names,&amount,&price,&floatcash);
+    DisplayPortfolio(names,amount,price,floatcash);
+
+    while(View) {
+
+        std::cout << "RELOAD | VIEW | SEARCH | BUY | SELL | SAVE | EXIT" << std::endl;
+        userinput.push_back(UserAutoCap());
+
+        if(std::strcmp(userinput[0].c_str(),"EXIT") == 0){
+            std::cout << "EXITING app..." << std::endl;
+            View = false;
+        }
+        if(std::strcmp(userinput[0].c_str(),"VIEW") == 0){
+            DisplayPortfolio(names,amount,price,floatcash);
+        }
+        if(std::strcmp(userinput[0].c_str(),"RELOAD") == 0){
+            lines = LoadPortfolio(FilePath);
+            ParserPortfolio(lines,&names,&amount,&price,&floatcash);
+            DisplayPortfolio(names,amount,price,floatcash);
+        }
+        if(std::strcmp(userinput[0].c_str(),"SEARCH") == 0){
+            std::cout << "Enter Stock Ticker" << std::endl;
+            userinput.push_back(UserAutoCap());
+
+            int max = userinput[1].size();
+            char ticker[max];
+            int i = 0;
+            while (userinput[1][i]){
+                ticker[i] = toupper(userinput[1][i]);
+                i++;
+            }
+
+            data = WebHandler(ticker);
+
+            output = WebParser(data);
+
+            std::cout << "Curent price $";
+            std::cout << std::stof(output[0]) << std::endl;
+            std::cout << "Previous Close $";
+            std::cout << std::stof(output[1]) << std::endl;
+            std::cout << "Open price $";
+            std::cout << std::stof(output[2]) << std::endl;
+
+            userinput.pop_back();
+        }
+        if(std::strcmp(userinput[0].c_str(),"BUY") == 0 || std::strcmp(userinput[0].c_str(),"SELL") == 0){
+            std::cout << userinput[0] <<" MENU" << std::endl;
+            std::cout << "Enter Stock Ticker" << std::endl;
+            userinput.push_back(UserAutoCap());
+            std::cout << "Enter Amount" << std::endl;
+            userinput.push_back(UserInput());
+
+            MarketPortfolio(userinput,&names,&amount,&price,&floatcash);
+
+            userinput.pop_back();
+            userinput.pop_back();
+
+        }
+        if(std::strcmp(userinput[0].c_str(),"SAVE") == 0){
+            std::cout << "SAVEING to file..." << std::endl;
+            SavePortfolio(FilePath,names,amount,price,floatcash);
+        }
+
+        userinput.pop_back();
+    }
+    return;
+}
+
 int main(int argc, char *argv[]){
     std::string data;
     std::string *output;
@@ -371,58 +453,8 @@ int main(int argc, char *argv[]){
         i++;
     }
 
-    if(std::strcmp(argv[1], "-f") == 0 && argc == 3){
-        // This could be a seperate function
-        bool View = true;
-        std::vector<std::string> lines;
-        std::vector<std::string> names;
-        std::vector<std::string> amount;
-        std::vector<std::string> price;
-        std::vector<std::string> floatcash;
-        std::vector<std::string> userinput;
-
-        // Load Profile
-        lines = LoadPortfolio(argv[2]);
-        ParserPortfolio(lines,&names,&amount,&price,&floatcash);
-        DisplayPortfolio(names,amount,price,floatcash);
-
-        while(View) {
-
-            std::cout << "RELOAD | DISPLAY | BUY | SELL | SAVE | EXIT" << std::endl;
-            userinput.push_back(UserAutoCap());
-
-            if(std::strcmp(userinput[0].c_str(),"EXIT") == 0){
-                std::cout << "EXITING app..." << std::endl;
-                View = false;
-            }
-            if(std::strcmp(userinput[0].c_str(),"DISPLAY") == 0){
-                DisplayPortfolio(names,amount,price,floatcash);
-            }
-            if(std::strcmp(userinput[0].c_str(),"RELOAD") == 0){
-                lines = LoadPortfolio(argv[2]);
-                ParserPortfolio(lines,&names,&amount,&price,&floatcash);
-                DisplayPortfolio(names,amount,price,floatcash);
-            }
-            if(std::strcmp(userinput[0].c_str(),"BUY") == 0 || std::strcmp(userinput[0].c_str(),"SELL") == 0){
-                std::cout << userinput[0] <<" MENU" << std::endl;
-                std::cout << "Enter Ticker Name" << std::endl;
-                userinput.push_back(UserAutoCap());
-                std::cout << "Enter Amount" << std::endl;
-                userinput.push_back(UserInput());
-
-                MarketPortfolio(userinput,&names,&amount,&price,&floatcash);
-
-                userinput.pop_back();
-                userinput.pop_back();
-
-            }
-            if(std::strcmp(userinput[0].c_str(),"SAVE") == 0){
-                std::cout << "SAVEING to file..." << std::endl;
-                SavePortfolio(argv[2],names,amount,price,floatcash);
-            }
-
-            userinput.pop_back();
-        }
+    if(std::strcmp(argv[1], "-f") == 0 && argc == 3) {
+        Portfolio(argv[2]);
         return 0;
     }
 
