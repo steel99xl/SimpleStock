@@ -5,7 +5,7 @@ such as price, short interests, and avalible volume averages
 The Python version can give you the most information
 
 
-The C++ version is faster but can manage PortfoloiFiles
+The C++ version is faster but and manage PortfoloiFiles but only give basic ticker information
 
 # Requirements
 ## General
