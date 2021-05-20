@@ -398,10 +398,6 @@ int main(int argc, char *argv[]){
             if(std::strcmp(userinput[0].c_str(),"DISPLAY") == 0){
                 DisplayPortfolio(names,amount,price,floatcash);
             }
-            // DEBUG DISPLAY TO PRINT BUFFER ONLY
-            if(std::strcmp(userinput[0].c_str(),"DEVDISPLAY") == 0){
-                DisplayPortfolio(names,amount,price,floatcash);
-            }
             if(std::strcmp(userinput[0].c_str(),"RELOAD") == 0){
                 lines = LoadPortfolio(argv[2]);
                 ParserPortfolio(lines,&names,&amount,&price,&floatcash);
