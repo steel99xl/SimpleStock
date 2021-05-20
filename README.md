@@ -2,10 +2,10 @@
 Gives simple stock informatoin 
 such as price, short interests, and avalible volume averages
 
-The Python version has the most up to date feature set
+The Python version can give you the most information
 
 
-The C++ version is faster but is behind feature wise 
+The C++ version is faster but can manage PortfoloiFiles
 
 # Requirements
 ## General
