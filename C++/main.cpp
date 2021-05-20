@@ -28,7 +28,7 @@ size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmem
 }
 
 // Takes Ticker and returns WebSite data as a String
-std::string WebHandler(char *Ticker){
+std::string WebHandler(const char *Ticker){
     CURL *curl;
     CURLcode res;
     std::string data;
@@ -56,12 +56,12 @@ std::string WebHandler(char *Ticker){
 
 // Take String and returns array for 3 strings
 // Only parses for price information
-std::string *WebParser(std::string data){
+std::vector<std::string> WebParser(std::string data){
     const char  *delchars = ",:op";
     int delcount[4] = {0,0,0,0};
 
     // oooo auto thanks clion
-    auto *output = new std::string[3];
+    std::vector<std::string> output;
     // 3 buffers cause we need three diffrent bits of info and it makes it easy
     std::string buff1;
     std::string buff2;
@@ -120,9 +120,9 @@ std::string *WebParser(std::string data){
 
     }
 
-    output[0] = buff1;
-    output[1] = buff2;
-    output[2] = buff3;
+    output.push_back(buff1);
+    output.push_back(buff2);
+    output.push_back(buff3);
 
     return output;
 }
@@ -208,7 +208,7 @@ void MarketPortfolio(std::vector<std::string> userinput, std::vector<std::string
     std::vector<std::string> tmpnames = *names;
     std::vector<std::string> tmpprice = *price;
     std::vector<std::string> tmpamount = *amount;
-    std::string *output;
+    std::vector<std::string> output;
     std::string data;
     char ticker[8];
 
@@ -325,7 +325,7 @@ void DisplayPortfolio(std::vector<std::string> names, std::vector<std::string> a
     char ticker[8];
     std::string data;
 
-    std::string *output;
+    std::vector<std::string> output;
     // 3 buffers cause we need three diffrent bits of info and it makes it easy
     std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
     for(int i = 0; i < names.size(); i++){
@@ -360,7 +360,7 @@ void Portfolio(char *FilePath){
     std::vector<std::string> floatcash;
     std::vector<std::string> userinput;
     std::string data;
-    std::string *output;
+
 
     // Load Profile
     lines = LoadPortfolio(FilePath);
@@ -386,28 +386,16 @@ void Portfolio(char *FilePath){
         }
         if(std::strcmp(userinput[0].c_str(),"SEARCH") == 0){
             std::cout << "Enter Stock Ticker" << std::endl;
-            userinput.push_back(UserAutoCap());
+            data = WebHandler(UserAutoCap().c_str());
 
-            int max = userinput[1].size();
-            char ticker[max];
-            int i = 0;
-            while (userinput[1][i]){
-                ticker[i] = toupper(userinput[1][i]);
-                i++;
-            }
-
-            data = WebHandler(ticker);
-
-            output = WebParser(data);
+            std::vector<std::string> output = WebParser(data);
 
             std::cout << "Curent price $";
-            std::cout << std::stof(output[0]) << std::endl;
+            std::cout << output[0] << std::endl;
             std::cout << "Previous Close $";
-            std::cout << std::stof(output[1]) << std::endl;
+            std::cout << output[1] << std::endl;
             std::cout << "Open price $";
-            std::cout << std::stof(output[2]) << std::endl;
-
-            userinput.pop_back();
+            std::cout << output[2] << std::endl;
         }
         if(std::strcmp(userinput[0].c_str(),"BUY") == 0 || std::strcmp(userinput[0].c_str(),"SELL") == 0){
             std::cout << userinput[0] <<" MENU" << std::endl;
@@ -429,12 +417,11 @@ void Portfolio(char *FilePath){
 
         userinput.pop_back();
     }
-    return;
 }
 
 int main(int argc, char *argv[]){
     std::string data;
-    std::string *output;
+    std::vector<std::string> output;
 
 	if(argc < 2){
 		std::cout << "ERROR use : " << std::endl;
