@@ -8,7 +8,7 @@
 // Only external library
 #include <curl/curl.h>
 
-// TODO : Either store in ram or load data from the file eatch time
+// TODO : N/A
 
 // URL BANK
 const char *Yahoo[2] = {"https://query1.finance.yahoo.com/v8/finance/chart/", "?region=US&lang=en-US&includePrePost=false&interval=1d&useYfid=true&range=1d&corsDomain=finance.yahoo.com&.tsrc=finance"};
@@ -152,6 +152,7 @@ void SavePortfolio(char *FilePath, std::vector<std::string> names,std::vector<st
     if(File.is_open()){
         File << "FloatCash="+floatcash[0]+"\n";
         for(int i = 0; i < names.size(); i++){
+        std::cout << i << std::endl;
             File << names[i] + "," + amount[i] + "," + price[i] + "\n";
         }
         File.close();
@@ -216,7 +217,6 @@ void MarketPortfolio(std::vector<std::string> userinput, std::vector<std::string
     data = WebHandler(ticker);
     output = WebParser(data);
     std::vector<std::string> cash = floatcash[0];
-    floatcash->pop_back();
 
     if(std::strcmp(userinput[0].c_str(),"BUY") == 0) {
 
@@ -224,6 +224,8 @@ void MarketPortfolio(std::vector<std::string> userinput, std::vector<std::string
             std::cout << "ERROR low funds.." << std::endl;
             return;
         }
+
+        floatcash->pop_back();
         floatcash->push_back(std::to_string(std::stof(cash[0]) - std::stof(output[0]) * std::stof(userinput[2])));
 
         for (int i = 0; i < names->size(); i++) {
@@ -431,21 +433,19 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 
-    // Capitalizes user input
-    int max = std::strlen(argv[1]);
-    char input[max];
-    int i = 0;
-    while (argv[1][i]){
-        input[i] = toupper(argv[1][i]);
-        i++;
-    }
-
     if(std::strcmp(argv[1], "-f") == 0 && argc == 3) {
         Portfolio(argv[2]);
         return 0;
     }
 
-    data = WebHandler(input);
+    // Capitalizes user input
+    int i = 0;
+    while (argv[1][i]){
+        argv[1][i] = toupper(argv[1][i]);
+        i++;
+    }
+
+    data = WebHandler(argv[1]);
 
    // for(int count = 0;count < 10; ++count){
    //     ProgressBar(count, 10, '#');
@@ -455,11 +455,11 @@ int main(int argc, char *argv[]){
     output = WebParser(data);
 
     std::cout << "Curent price $";
-    std::cout << std::stof(output[0]) << std::endl;
+    std::cout << output[0] << std::endl;
     std::cout << "Previous Close $";
-    std::cout << std::stof(output[1]) << std::endl;
+    std::cout << output[1] << std::endl;
     std::cout << "Open price $";
-    std::cout << std::stof(output[2]) << std::endl;
+    std::cout << output[2] << std::endl;
 
   	return 0;
 }
