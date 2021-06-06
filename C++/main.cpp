@@ -8,11 +8,15 @@
 // Only external library
 #include <curl/curl.h>
 
-// TODO : N/A
+// TODO : Add US inflation... maybe...
 
 // URL BANK
 const char *Yahoo[2] = {"https://query1.finance.yahoo.com/v8/finance/chart/", "?region=US&lang=en-US&includePrePost=false&interval=1d&useYfid=true&range=1d&corsDomain=finance.yahoo.com&.tsrc=finance"};
-const char * Crypto = "https://web-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=2781,3526,3537,2821,3527,2782,3528,3531,3530,3533,3532,2832,3529,2783,2814,3549,2784,2786,2787,2820,3534,2815,3535,2788,2789,3536,3538,2790,3539,3540,3541,3542,2792,2793,2818,2796,2794,3544,3543,2795,3545,2797,3546,3551,3547,3550,3548,3552,3556,2800,2816,2799,3555,3558,3554,3557,3559,3561,2811,2802,3560,2819,2801,3562,2804,3563,2822,2803,2805,2791,3564,2817,2806,3566,3565,2808,2812,2798,3567,3573,3553,2807,2785,2809,3569,3568,2810,3570,2824,2813,3571,3572,2823,1,1027,2010,1839,6636,52,1975,2,512,1831,7083,74,9023,9022&convert_id=2781";
+const char *Crypto = "https://web-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=2781,3526,3537,2821,3527,2782,3528,3531,3530,3533,3532,2832,3529,2783,2814,3549,2784,2786,2787,2820,3534,2815,3535,2788,2789,3536,3538,2790,3539,3540,3541,3542,2792,2793,2818,2796,2794,3544,3543,2795,3545,2797,3546,3551,3547,3550,3548,3552,3556,2800,2816,2799,3555,3558,3554,3557,3559,3561,2811,2802,3560,2819,2801,3562,2804,3563,2822,2803,2805,2791,3564,2817,2806,3566,3565,2808,2812,2798,3567,3573,3553,2807,2785,2809,3569,3568,2810,3570,2824,2813,3571,3572,2823,1,1027,2010,1839,6636,52,1975,2,512,1831,7083,74,9023,9022&convert_id=2781";
+// 1 ,3 ,5 are the ranges for the zoom (years)
+// Default is 5
+const char *InflationRate = "https://ycharts.com/charts/fund_data.json?securities=id%3AI%3AUSIR%2Cinclude%3Atrue%2C%2C&zoom=";
+
 
 // Based on example from libcurl
 size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmemb, std::string *s){
@@ -40,8 +44,13 @@ std::string WebHandler(const char *Ticker, const char *mode) {
 
     if(curl){
         // takes char * and const char * for url
+
         if (std::strcmp(mode,"-c") == 0 || std::strcmp(mode,"C") == 0 ) {
             curl_easy_setopt(curl, CURLOPT_URL, Crypto);
+        }
+
+        if(std::strcmp(mode,"-i") == 0 || std::strcmp(mode,"I") == 0){
+            curl_easy_setopt(curl, CURLOPT_URL, InflationRate);
         }
 
         if (std::strcmp(mode,"S") == 0) {
@@ -174,12 +183,7 @@ void SavePortfolio(char *FilePath, std::vector<std::string> types,std::vector<st
     if(File.is_open()){
         File << "FloatCash="+floatcash[0]+"\n";
         for(int i = 0; i < names.size(); i++){
-            if(strcmp(types[i].c_str(),"C") == 0){
-               File << names[i] + ";" + amount[i] + ";" + price[i] + "\n";
-            }
-            else {
-                File << names[i] + "," + amount[i] + "," + price[i] + "\n";
-            }
+            File << names[i] + "," + amount[i] + "," + price[i] + "," + types[i] + "\n";
         }
         File.close();
     }
@@ -187,8 +191,8 @@ void SavePortfolio(char *FilePath, std::vector<std::string> types,std::vector<st
 }
 
 void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *types, std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash){
-    std::string delims = ",;=";
-    int delcount[5] = {0,0,0,0,0};
+    std::string delims = ",=";
+    int delcount[6] = {0,0,0,0,0,0};
 
     types->clear();
     names->clear();
@@ -199,41 +203,35 @@ void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *t
     for(auto & line : lines) {
         delcount[0] = 0;
         delcount[1] = 0;
+        delcount[2] = 0;
         for (int j = 0; j < line.length(); j++) {
             if (line[j] == delims[0]) {
                 if (delcount[0] == 0) {
                     delcount[0] = j;
-                } else {
+                } else if(delcount[1] == 0) {
                     delcount[1] = j;
-                    types->push_back("S");
+                } else{
+                    delcount[2] = j;
                 }
             }
-
             if (line[j] == delims[1]) {
-                if (delcount[0] == 0) {
-                    delcount[0] = j;
-                } else {
-                    delcount[1] = j;
-                    types->push_back("C");
-                }
-            }
-            if (line[j] == delims[2]) {
-                delcount[2] = j;
+                delcount[3] = j;
                 // ya
-                delcount[3] = delcount[4];
+                delcount[4] = delcount[5];
             }
         }
 
         if (delcount[0] != delcount[1]) {
             names->push_back(line.substr(0, delcount[0]));
             amount->push_back(line.substr(delcount[0] + 1, delcount[1] - delcount[0] - 1));
-            price->push_back(line.substr(delcount[1] + 1, line.length() - 1));
+            price->push_back(line.substr(delcount[1] + 1, delcount[2] - delcount[1] - 1));
+            types->push_back(line.substr(delcount[2] + 1, line.length() - 1));
         }
-        delcount[4] += 1;
+        delcount[5] += 1;
     }
 
-    if(delcount[2] != 0){
-        floatcash->push_back(lines[delcount[3]].substr(delcount[2] + 1,lines[delcount[3]].length() - 1));
+    if(delcount[3] != 0){
+        floatcash->push_back(lines[delcount[4]].substr(delcount[3] + 1,lines[delcount[4]].length() - 1));
     }
     else{
         floatcash->push_back("0.0");
@@ -374,6 +372,15 @@ std::string UserAutoCap(){
     return userinput;
 }
 
+char * CMDUpper(char* &input){
+    for(int i = 0; i < sizeof(input); i++){
+        input[i] = toupper(input[i]);
+    }
+
+    return input;
+
+}
+
 void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> names, std::vector<std::string> amount, std::vector<std::string> price, std::vector<std::string> floatcash){
     // Calculates informaion based on loaded file
     float LossGain = 0.0;
@@ -398,6 +405,7 @@ void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> na
 
             LossGain += std::stof(amount[i]) * std::stof(output[0]) - std::stof(amount[i]) * std::stof(price[i]);
             TotalValue += std::stof(amount[i]) * std::stof(output[0]);
+
 
             std::cout << names[i] << " | " << amount[i] << " | " << price[i] << " | " << output[0] << " | " << std::stof(amount[i]) * std::stof(output[0]) - std::stof(amount[i]) * std::stof(price[i]) << std::endl;
     }
@@ -513,17 +521,32 @@ int main(int argc, char *argv[]){
 	    std::cout << "owo crypto" << std::endl;
 	    data = WebHandler(argv[1], argv[1]);
 
-	    // Parse Crypto Data
-	    std::size_t Name = data.find(argv[2]);
-	    std::size_t Price;
-	    std::size_t EPrice;
-	    Price = data.find("price",Name);
-	    EPrice = data.find(',', Price);
+        CMDUpper(argv[2]);
 
-	    // Give the current price
+        // casting char* to const char* in the chase of using string.find cause weird erros to occrur
+        // until a way of curcomventing the problem is found  the parsing will have to be duplicated to here
+
+        std::size_t Name = data.find(argv[2]);
+        std::size_t Price;
+        std::size_t EPrice;
+        Price = data.find("price", Name);
+        EPrice = data.find(',', Price);
+
 	    std::cout << "Current Price : $";
-	    std::cout << data.substr(Price+7, EPrice - Price - 7) << std::endl;
+        std::cout << data.substr(Price + 7, EPrice - Price - 7) << std::endl;
 
+	    return 0;
+	}
+
+	if(std::strcmp(argv[1], "-i") == 0){
+	    std::cout << "uwu inflate me daddy" << std::endl;
+	    data = WebHandler(argv[1],argv[1]);
+
+	    std::size_t StartPos  = data.find("last_value");
+	    std::size_t EndPos = data.find(',',StartPos);
+	    std::cout << "Current Inflation Rate =";
+	    std::cout << data.substr(StartPos+12, EndPos-StartPos-12);
+	    std::cout << "%" << std::endl;
 	    return 0;
 	}
 
@@ -533,13 +556,9 @@ int main(int argc, char *argv[]){
     }
 
     // Capitalizes user input
-    for(int i = 0; i< sizeof(argv[1]); i++){
-        argv[1][i] = toupper(argv[1][i]);
-        i++;
-    }
+    CMDUpper(argv[1]);
 
-
-    data = WebHandler(argv[1],"s");
+    data = WebHandler(argv[1],"S");
 
     output = WebParser(data);
 
