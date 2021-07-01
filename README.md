@@ -12,11 +12,13 @@ The C++ version is faster but and manage PortfoloiFiles but only give basic tick
 internet connection
 
 
-## Python
-python3
-
 ## C++
 libcurl
+
+
+## Python
+### out of date
+python3
 
 
 # Usage
