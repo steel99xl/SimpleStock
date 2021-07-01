@@ -23,12 +23,14 @@ python3
 
 # Usage
 ```bash
+# C++ version
+./Stock [TICKER]
+./Stock -i
+./Stock -l [PortfolioFile]
+./Stock -n [NewPortfolioFile] [StartingCash]
+
 # Python version
 ./Stock.py [TICKER]
 ./Stock.py -s       get most shorted stocks
 ./Stock.py -f [PortfolioFile] [threadcount](optinal) loads and displays portfolio
-
-# C++ version
-./Stock [TICKER]
-./Stock -f [PortfolioFile]
 ```
