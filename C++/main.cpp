@@ -93,7 +93,7 @@ std::vector<std::string> WebParser(std::string data, const char *crypto = ""){
         buff2 = data.substr(curStart, curEnd-curStart);
 
         curStart = data.find("open")+7;
-        curEnd = data.find("]" ,curStart);
+        curEnd = data.find("," ,curStart);
         buff3 = data.substr(curStart, curEnd-curStart);
 
         output.push_back(buff1);
