@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
-#include <ctime>
 #include <fstream>
 //#include <thread>
 //#include <chrono>
@@ -18,6 +17,7 @@ const char *Crypto = "https://web-api.coinmarketcap.com/v1/cryptocurrency/quotes
 // Default is 5
 const char *InflationRate = "https://ycharts.com/charts/fund_data.json?securities=id%3AI%3AUSIR%2Cinclude%3Atrue%2C%2C&zoom=";
 
+
 // Based on example from libcurl
 size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmemb, std::string *s){
     size_t newLength = size*nmemb;
@@ -30,6 +30,7 @@ size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmem
     }
     return newLength;
 }
+
 
 // Takes Ticker and returns WebSite data as a String
 std::string WebHandler(const char *Ticker, const char *mode) {
@@ -81,8 +82,7 @@ std::vector<std::string> WebParser(std::string data, const char *crypto = ""){
     std::string buff1;
     std::string buff2;
     std::string buff3;
-    
-    // Im assuming that this is faster than manualy searching the string for chars
+
     if (strcmp(crypto,"") == 0) {
         std::size_t curStart = data.find("regularMarketPrice")+20; 
         std::size_t curEnd = data.find(",",curStart);
@@ -93,7 +93,7 @@ std::vector<std::string> WebParser(std::string data, const char *crypto = ""){
         buff2 = data.substr(curStart, curEnd-curStart);
 
         curStart = data.find("open")+7;
-        curEnd = data.find("," ,curStart);
+        curEnd = data.find("]" ,curStart);
         buff3 = data.substr(curStart, curEnd-curStart);
 
         output.push_back(buff1);
@@ -152,8 +152,7 @@ void SavePortfolio(std::string FilePath, std::vector<std::string> types,std::vec
     std::cout << "SAVE complete..." << std::endl;
 }
 
-// Parses lines from a loaded file and sets values in string vectors
-void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *types, std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash, std::string OffSet = "0.0"){
+void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *types, std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash){
     std::string delims = ",=";
     int delcount[6] = {0,0,0,0,0,0};
 
@@ -197,12 +196,11 @@ void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *t
         floatcash->push_back(lines[delcount[4]].substr(delcount[3] + 1,lines[delcount[4]].length() - 1));
     }
     else{
-        floatcash->push_back(OffSet);
+        floatcash->push_back("0.0");
     }
 
 }
 
-// Lets you "buy" and "sell" stocks and crypto
 void MarketPortfolio(std::vector<std::string> userinput, std::vector<std::string> *types, std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash ){
     std::vector<std::string> tmptypes = *types;
     std::vector<std::string> tmpnames = *names;
@@ -319,7 +317,6 @@ void MarketPortfolio(std::vector<std::string> userinput, std::vector<std::string
 
 }
 
-// Takes and returns userinput as a string
 std::string UserInput(){
     std::string userinput;
     std::cout << "# ";
@@ -327,7 +324,6 @@ std::string UserInput(){
     return userinput;
 }
 
-// Takes userinput and capitalizes befor returning it
 std::string UserAutoCap(){
     std::string userinput;
 
@@ -341,7 +337,6 @@ std::string UserAutoCap(){
     return userinput;
 }
 
-// Used to capitalize runtime optons
 char * CMDUpper(char* &input){
     for(int i = 0; i < sizeof(input); i++){
         input[i] = toupper(input[i]);
@@ -349,7 +344,6 @@ char * CMDUpper(char* &input){
     return input;
 }
 
-// The overall view of your portfolio
 void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> names, std::vector<std::string> amount, std::vector<std::string> price, std::vector<std::string> floatcash){
     // Calculates informaion based on loaded file
     float LossGain = 0.0;
@@ -388,8 +382,8 @@ void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> na
 
 }
 
-// Menu and managment for Portfolio managment
-void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0"){
+// Main menu for Portfolio managment
+void Portfolio(const char *FilePath){
     bool View = true;
     std::vector<std::string> lines;
     std::vector<std::string> types;
@@ -399,13 +393,12 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
     std::vector<std::string> floatcash;
     std::vector<std::string> userinput;
     std::string UserFilePath = FilePath;
-    std::string TempFloat = TempCash;
     std::string data;
 
 
     // Load Profile
     lines = LoadPortfolio(UserFilePath);
-    ParserPortfolio(lines,&types,&names,&amount,&price,&floatcash, TempFloat);
+    ParserPortfolio(lines,&types,&names,&amount,&price,&floatcash);
     std::vector<std::string>().swap(lines);
     DisplayPortfolio(types, names,amount,price,floatcash);
 
@@ -491,24 +484,20 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
     std::vector<std::string>().swap(userinput);
 }
 
-// Main, deals with runtime input and starting all other processes
 int main(int argc, char *argv[]){
     std::string data;
     std::string buffer;
     std::vector<std::string> output;
 
-    // some basic minimum input checks
 	if(argc < 2){
 		std::cout << "ERROR use : " << std::endl;
 		std::cout << "./Stock [TICKER] " << std::endl;
 		std::cout << "./Stock -c [CRYPTO] " << std::endl;
-        std::cout << "./Stock -l [PortfolioFile] " << std::endl;
-        std::cout << "./Stock -n [NewFile] [StartingCash]" << std::endl;
+        std::cout << "./Stock -f [PortfolioFile] " << std::endl;
 
 		return 1;
 	}
-    
-    // Crypto Info
+
 	if(std::strcmp(argv[1], "-c") == 0 && argc == 3){
 	    std::cout << "owo crypto" << std::endl;
 	    data = WebHandler(argv[1], argv[1]);
@@ -524,15 +513,9 @@ int main(int argc, char *argv[]){
 
 	    return 0;
 	}
-    
-    // Inflation
+
 	if(std::strcmp(argv[1], "-i") == 0){
 	    std::cout << "uwu inflate me daddy" << std::endl;
-	    const time_t Test = 1622419200;
-	    char *Date = ctime(&Test);
-
-	    std::cout << "Last Updated on : " << Date;
-
 	    data = WebHandler(argv[1],argv[1]);
 
         CMDUpper(argv[1]);
@@ -547,12 +530,8 @@ int main(int argc, char *argv[]){
 	    return 0;
 	}
 
-    // Portfolio loader
-    if(std::strcmp(argv[1], "-l") == 0 && argc == 3) {
+    if(std::strcmp(argv[1], "-f") == 0 && argc == 3) {
         Portfolio(argv[2]);
-        return 0;
-    } else if(std::strcmp(argv[1], "-n") == 0 && argc ==4){
-        Portfolio(argv[2], argv[3]);
         return 0;
     }
 
