@@ -59,7 +59,7 @@ std::string WebHandler(const char *Ticker, const char *mode) {
             curl_easy_setopt(curl, CURLOPT_URL, url);
         }
 
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "nice/6.9");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
         // Passed Provided string to the callback function noted above
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
