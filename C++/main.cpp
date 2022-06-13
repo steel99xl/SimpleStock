@@ -150,6 +150,7 @@ void SavePortfolio(std::string FilePath, std::vector<std::string> types,std::vec
         File.close();
     }
     std::cout << "SAVE complete..." << std::endl;
+
 }
 
 // Parses lines from a loaded file and sets values in string vectors
@@ -373,15 +374,13 @@ void ThreadedLookUp(std::string *Name, std::string *Amount, std::string *Type, s
 }
 
 // The overall view of your portfolio
-void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> names, std::vector<std::string> amount, std::vector<std::string> price, std::vector<std::string> floatcash){
+void DisplayPortfolio(std::vector<std::string> *types,std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash){
     // Calculates informaion based on loaded file
     float LossGain = 0.0;
     float TotalValue = 0.0;
-    char ticker[8];
-    std::string data;
-    std::vector<std::string> output;
-
-
+    //char ticker[8];
+    //std::string data;
+    //std::vector<std::string> output;
     std::vector<float> LossGainVect;
     std::vector<float> TotalValueVect;
     std::vector<std::string> PrintOut;
@@ -389,15 +388,16 @@ void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> na
 
     std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
 
-    for(int i = 0; i < names.size(); i++){
-        ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names.at(i), &amount.at(i), &types.at(i), &price.at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
+    for(int i = 0; i < names->size(); i++){
+        ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
     }
 
     for(unsigned long i = 0; i < ThreadVect.size(); i++){
         std::cout << (float)i/(float)ThreadVect.size();
-        //std::cout << "\r";
+        std::cout << "\r";
         ThreadVect.at(i)->join();
     }
+    std:: cout << "\n";
 
     for(unsigned long i = 0; i < PrintOut.size(); i++){
         std::cout << PrintOut[i] << std::endl;
@@ -412,13 +412,18 @@ void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> na
     }
 
     std::cout << "\n\r------------------------------------------------" << std::endl;
-    std::cout << "Float Cash : $" << std::stof(floatcash[0]) << std::endl;
-    std::cout << "Initial Value : $" << TotalValue - LossGain + std::stof(floatcash[0]) << std::endl;
+    std::cout << "Float Cash : $" << std::stof(floatcash->at(0)) << std::endl;
+    std::cout << "Initial Value : $" << TotalValue - LossGain + std::stof(floatcash->at(0)) << std::endl;
     std::cout << "Loss/Gain : $" << LossGain << std::endl;
-    std::cout << "Total value : $" << TotalValue + std::stof(floatcash[0]) << std::endl;
+    std::cout << "Total value : $" << TotalValue + std::stof(floatcash->at(0)) << std::endl;
     std::cout << "\n" << std::endl;
 
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    ThreadVect.clear();
+    TotalValueVect.clear();
+    LossGainVect.clear();
+    PrintOut.clear();
 }
 
 // Menu and managment for Portfolio managment
@@ -440,7 +445,7 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
     lines = LoadPortfolio(UserFilePath);
     ParserPortfolio(lines,&types,&names,&amount,&price,&floatcash, TempFloat);
     std::vector<std::string>().swap(lines);
-    DisplayPortfolio(types, names,amount,price,floatcash);
+    DisplayPortfolio(&types, &names,&amount,&price,&floatcash);
 
     while(View) {
 
@@ -452,7 +457,7 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
             View = false;
         }
         if(std::strcmp(userinput[0].c_str(),"VIEW") == 0){
-            DisplayPortfolio(types,names,amount,price,floatcash);
+            DisplayPortfolio(&types,&names,&amount,&price,&floatcash);
         }
         if(std::strcmp(userinput[0].c_str(),"RELOAD") == 0 || std::strcmp(userinput[0].c_str(),"LOAD") == 0){
             if(std::strcmp(userinput[0].c_str(),"LOAD") == 0){
@@ -465,7 +470,7 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
             }
             ParserPortfolio(lines,&types,&names,&amount,&price,&floatcash);
             std::vector<std::string>().swap(lines);
-            DisplayPortfolio(types,names,amount,price,floatcash);
+            DisplayPortfolio(&types,&names,&amount,&price,&floatcash);
         }
         if(std::strcmp(userinput[0].c_str(),"SEARCH") == 0){
             std::cout << "Stock or Crypto (S/C)" << std::endl;
@@ -513,7 +518,7 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
             SavePortfolio(UserFilePath,types,names,amount,price,floatcash);
         }
 
-        userinput.pop_back();
+        userinput.clear();
     }
     std::vector<std::string>().swap(lines);
     std::vector<std::string>().swap(types);
