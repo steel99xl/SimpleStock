@@ -3,7 +3,7 @@
 #include <cstring>
 #include <ctime>
 #include <fstream>
-//#include <thread>
+#include <thread>
 //#include <chrono>
 
 // Only external library
@@ -349,6 +349,29 @@ char * CMDUpper(char* &input){
     return input;
 }
 
+// This is used by the DisplayPortfolio to speed up the gathing of info for display
+void ThreadedLookUp(std::string *Name, std::string *Amount, std::string *Type, std::string *Price , std::vector<float> *LossGainVect, std::vector<float> *TotalValueVect, std::vector<std::string> *FinalOut){
+    char ticker[8];
+    std::string data;
+    std::vector<std::string> output;
+
+    std::strcpy(ticker,Name->c_str());
+    data = WebHandler(ticker,Type->c_str());
+
+    if(strcmp(Type->c_str(),"C") == 0){
+        output = WebParser(data,Name->c_str());
+
+    }else{
+        output = WebParser(data);
+    }
+
+    LossGainVect->push_back(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price));
+    TotalValueVect->push_back(std::stof(*Amount) * std::stof(output[0]));
+
+
+    FinalOut->push_back(*Name + " | " + *Amount + " | " + *Price + " | " + output[0] + " | " + std::to_string(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price)));
+}
+
 // The overall view of your portfolio
 void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> names, std::vector<std::string> amount, std::vector<std::string> price, std::vector<std::string> floatcash){
     // Calculates informaion based on loaded file
@@ -358,26 +381,36 @@ void DisplayPortfolio(std::vector<std::string> types,std::vector<std::string> na
     std::string data;
     std::vector<std::string> output;
 
+
+    std::vector<float> LossGainVect;
+    std::vector<float> TotalValueVect;
+    std::vector<std::string> PrintOut;
+    std::vector<std::unique_ptr<std::thread> > ThreadVect;
+
     std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
+
     for(int i = 0; i < names.size(); i++){
-
-            std::strcpy(ticker,names[i].c_str());
-            data = WebHandler(ticker,types[i].c_str());
-
-            if(strcmp(types[i].c_str(),"C") == 0){
-                output = WebParser(data,names[i].c_str());
-
-            }else{
-                output = WebParser(data);
-            }
-
-
-            LossGain += std::stof(amount[i]) * std::stof(output[0]) - std::stof(amount[i]) * std::stof(price[i]);
-            TotalValue += std::stof(amount[i]) * std::stof(output[0]);
-
-
-            std::cout << names[i] << " | " << amount[i] << " | " << price[i] << " | " << output[0] << " | " << std::stof(amount[i]) * std::stof(output[0]) - std::stof(amount[i]) * std::stof(price[i]) << std::endl;
+        ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names.at(i), &amount.at(i), &types.at(i), &price.at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
     }
+
+    for(unsigned long i = 0; i < ThreadVect.size(); i++){
+        std::cout << (float)i/(float)ThreadVect.size();
+        //std::cout << "\r";
+        ThreadVect.at(i)->join();
+    }
+
+    for(unsigned long i = 0; i < PrintOut.size(); i++){
+        std::cout << PrintOut[i] << std::endl;
+    }
+
+    for(unsigned long i = 0; i < LossGainVect.size(); i++){
+        LossGain += LossGainVect[i];
+    }
+
+    for (unsigned long i = 0; i < TotalValueVect.size() ; i++) {
+        TotalValue += TotalValueVect[i];
+    }
+
     std::cout << "\n\r------------------------------------------------" << std::endl;
     std::cout << "Float Cash : $" << std::stof(floatcash[0]) << std::endl;
     std::cout << "Initial Value : $" << TotalValue - LossGain + std::stof(floatcash[0]) << std::endl;
@@ -527,7 +560,7 @@ int main(int argc, char *argv[]){
     
     // Inflation
 	if(std::strcmp(argv[1], "-i") == 0){
-	    std::cout << "uwu inflate me daddy" << std::endl;
+	    //std::cout << "uwu inflate me daddy" << std::endl;
 
 	    data = WebHandler(argv[1],argv[1]);
 
