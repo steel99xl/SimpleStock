@@ -19,13 +19,14 @@ const char *Crypto = "https://web-api.coinmarketcap.com/v1/cryptocurrency/quotes
 const char *InflationRate = "https://ycharts.com/charts/fund_data.json?securities=id%3AI%3AUSIR%2Cinclude%3Atrue%2C%2C&zoom=";
 
 // Based on example from libcurl
-size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmemb, std::string *s){
+size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmemb, std::string *data){
     size_t newLength = size*nmemb;
     try{
-        s->append((char*)contents, newLength);
+        data->append((char*)contents, newLength);
     }
     catch(std::bad_alloc &e){
         // handle memory problem
+        std::cout << "bad memory allocation" << std::endl;
         return 0;
     }
     return newLength;
@@ -66,8 +67,9 @@ std::string WebHandler(const char *Ticker, const char *mode) {
 
         // This makes the curl connection
         curl_easy_perform(curl);
-      }
+    }
     curl_easy_cleanup(curl);
+
     return data;
 }
 
@@ -84,8 +86,8 @@ std::vector<std::string> WebParser(std::string data, const char *crypto = ""){
     
     // Im assuming that this is faster than manualy searching the string for chars
     if (strcmp(crypto,"") == 0) {
-        std::size_t curStart = data.find("regularMarketPrice")+20; 
-        std::size_t curEnd = data.find(",",curStart);
+        unsigned int curStart = data.find("regularMarketPrice")+20;
+        unsigned int curEnd = data.find(",",curStart);
         buff1 = data.substr(curStart , curEnd-curStart);
 
         curStart = data.find("chartPreviousClose")+20;
@@ -102,16 +104,16 @@ std::vector<std::string> WebParser(std::string data, const char *crypto = ""){
 
         return output;
     } else if(strcmp(crypto,"-I") == 0 || strcmp(crypto,"I") == 0) {
-        std::size_t StartPos  = data.find("last_value")+12;
-        std::size_t EndPos = data.find(',',StartPos);
+        unsigned int StartPos  = data.find("last_value")+12;
+        unsigned int EndPos = data.find(',',StartPos);
         output.push_back(data.substr(StartPos, EndPos-StartPos));
 
         return output;
 
     }else {
-        std::size_t Name = data.find(crypto);
-        std::size_t Price = data.find("price", Name)+7;
-        std::size_t EPrice = data.find(',', Price);
+        unsigned int Name = data.find(crypto);
+        unsigned int Price = data.find("price", Name)+7;
+        unsigned int EPrice = data.find(',', Price);
         output.push_back(data.substr(Price, EPrice - Price));
 
         return output;
@@ -154,17 +156,26 @@ void SavePortfolio(std::string FilePath, std::vector<std::string> types,std::vec
 }
 
 // Parses lines from a loaded file and sets values in string vectors
-void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *types, std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash, std::string OffSet = "0.0"){
+void ParserPortfolio(std::vector<std::string> *lines, std::vector<std::string> *types, std::vector<std::string> *names, std::vector<std::string> *amount, std::vector<std::string> *price, std::vector<std::string> *floatcash, std::string *OffSet){
     std::string delims = ",=";
     int delcount[6] = {0,0,0,0,0,0};
 
     types->clear();
-    names->clear();
-    amount->clear();
-    price->clear();
-    floatcash->clear();
+    types->shrink_to_fit();
 
-    for(auto & line : lines) {
+    names->clear();
+    names->shrink_to_fit();
+
+    amount->clear();
+    amount->shrink_to_fit();
+
+    price->clear();
+    price->shrink_to_fit();
+
+    floatcash->clear();
+    floatcash->shrink_to_fit();
+
+    for(auto & line : *lines) {
         delcount[0] = 0;
         delcount[1] = 0;
         delcount[2] = 0;
@@ -195,10 +206,10 @@ void ParserPortfolio(std::vector<std::string> lines, std::vector<std::string> *t
     }
 
     if(delcount[3] != 0){
-        floatcash->push_back(lines[delcount[4]].substr(delcount[3] + 1,lines[delcount[4]].length() - 1));
+        floatcash->push_back(lines->at(delcount[4]).substr(delcount[3] + 1,lines->at(delcount[4]).length() - 1));
     }
     else{
-        floatcash->push_back(OffSet);
+        floatcash->push_back(*OffSet);
     }
 
 }
@@ -371,6 +382,8 @@ void ThreadedLookUp(std::string *Name, std::string *Amount, std::string *Type, s
 
 
     FinalOut->push_back(*Name + " | " + *Amount + " | " + *Price + " | " + output[0] + " | " + std::to_string(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price)));
+    output.clear();
+    output.shrink_to_fit();
 }
 
 // The overall view of your portfolio
@@ -389,14 +402,16 @@ void DisplayPortfolio(std::vector<std::string> *types,std::vector<std::string> *
     std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
 
     for(int i = 0; i < names->size(); i++){
-        ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
+        ThreadedLookUp(&names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut);
+        //ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
     }
-
+    /*
     for(unsigned long i = 0; i < ThreadVect.size(); i++){
         std::cout << (float)i/(float)ThreadVect.size();
         std::cout << "\r";
         ThreadVect.at(i)->join();
     }
+     */
     std:: cout << "\n";
 
     for(unsigned long i = 0; i < PrintOut.size(); i++){
@@ -420,10 +435,17 @@ void DisplayPortfolio(std::vector<std::string> *types,std::vector<std::string> *
 
 
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
-    ThreadVect.clear();
     TotalValueVect.clear();
+    TotalValueVect.shrink_to_fit();
+
     LossGainVect.clear();
+    LossGainVect.shrink_to_fit();
+
     PrintOut.clear();
+    PrintOut.shrink_to_fit();
+
+    ThreadVect.clear();
+    ThreadVect.shrink_to_fit();
 }
 
 // Menu and managment for Portfolio managment
@@ -443,8 +465,11 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
 
     // Load Profile
     lines = LoadPortfolio(UserFilePath);
-    ParserPortfolio(lines,&types,&names,&amount,&price,&floatcash, TempFloat);
-    std::vector<std::string>().swap(lines);
+    ParserPortfolio(&lines,&types,&names,&amount,&price,&floatcash, &TempFloat);
+    lines.clear();
+    lines.shrink_to_fit();
+    TempFloat = 0.0;
+    //std::vector<std::string>().swap(lines);
     DisplayPortfolio(&types, &names,&amount,&price,&floatcash);
 
     while(View) {
@@ -464,12 +489,12 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
                 userinput.pop_back();
                 userinput.push_back(UserInput());
                 UserFilePath = userinput[0];
-                lines = LoadPortfolio(UserFilePath);
-            } else{
-                lines = LoadPortfolio(UserFilePath);
+           //     lines = LoadPortfolio(UserFilePath);
             }
-            ParserPortfolio(lines,&types,&names,&amount,&price,&floatcash);
-            std::vector<std::string>().swap(lines);
+            lines = LoadPortfolio(UserFilePath);
+            ParserPortfolio(&lines,&types,&names,&amount,&price,&floatcash,&TempFloat);
+            lines.clear();
+            lines.shrink_to_fit();
             DisplayPortfolio(&types,&names,&amount,&price,&floatcash);
         }
         if(std::strcmp(userinput[0].c_str(),"SEARCH") == 0){
@@ -493,6 +518,9 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
                 std::cout << output[1] << std::endl;
                 std::cout << "Open price $";
                 std::cout << output[2] << std::endl;
+
+                output.clear();
+                output.shrink_to_fit();
             }
             userinput.pop_back();
             userinput.pop_back();
@@ -519,14 +547,29 @@ void Portfolio(const char *FilePath = "newfile.ss", const char  *TempCash = "0.0
         }
 
         userinput.clear();
+        userinput.shrink_to_fit();
     }
-    std::vector<std::string>().swap(lines);
-    std::vector<std::string>().swap(types);
-    std::vector<std::string>().swap(names);
-    std::vector<std::string>().swap(amount);
-    std::vector<std::string>().swap(price);
-    std::vector<std::string>().swap(floatcash);
-    std::vector<std::string>().swap(userinput);
+   // std::vector<std::string>().swap(lines);
+    lines.clear();
+    lines.shrink_to_fit();
+    //std::vector<std::string>().swap(types);
+    types.clear();
+    types.shrink_to_fit();
+    //std::vector<std::string>().swap(names);
+    names.clear();
+    names.shrink_to_fit();
+   // std::vector<std::string>().swap(amount);
+    amount.clear();
+    amount.shrink_to_fit();
+    //std::vector<std::string>().swap(price);
+    price.clear();
+    price.shrink_to_fit();
+    //std::vector<std::string>().swap(floatcash);
+    floatcash.clear();
+    floatcash.shrink_to_fit();
+    //std::vector<std::string>().swap(userinput);
+    userinput.clear();
+    userinput.shrink_to_fit();
 }
 
 // Main, deals with runtime input and starting all other processes
