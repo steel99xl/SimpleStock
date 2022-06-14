@@ -70,6 +70,10 @@ std::string WebHandler(const char *Ticker, const char *mode) {
     }
     curl_easy_cleanup(curl);
 
+    if(std::strcmp(data.c_str(), "") == 0){
+        std::cout << "ERROR no internet connection or the sites down" << std::endl;
+        data = "ERROR check your internet and the sites used by this app";
+    }
     return data;
 }
 
@@ -237,9 +241,15 @@ void MarketPortfolio(std::vector<std::string> userinput, std::vector<std::string
     std::vector<std::string> cash = floatcash[0];
 
     if(std::strcmp(userinput[0].c_str(),"BUY") == 0) {
-
-        if (std::stof(cash[0]) < std::stof(output[0]) * std::stof(userinput[3])) {
-            std::cout << "ERROR low funds.." << std::endl;
+        // This is incase the user provides an invalid stock ticker or crypto
+        try{ 
+            if (std::stof(cash[0]) < std::stof(output[0]) * std::stof(userinput[3])) {
+                std::cout << "ERROR low funds.." << std::endl;
+                return;
+            }
+        }
+        catch(std::invalid_argument &e){
+            std::cout << "ERROR invalid TICKER or CRYPTO.." << std::endl;
             return;
         }
 
@@ -369,6 +379,9 @@ void ThreadedLookUp(std::string *Name, std::string *Amount, std::string *Type, s
 
     std::strcpy(ticker,Name->c_str());
     data = WebHandler(ticker,Type->c_str());
+    if(std::strcmp(data.c_str(),"") == 0){
+        data = "ERROR";
+    }
 
     if(strcmp(Type->c_str(),"C") == 0){
         output = WebParser(data,Name->c_str());
@@ -376,12 +389,17 @@ void ThreadedLookUp(std::string *Name, std::string *Amount, std::string *Type, s
     }else{
         output = WebParser(data);
     }
+    
+    try{
+        LossGainVect->push_back(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price));
+        TotalValueVect->push_back(std::stof(*Amount) * std::stof(output[0]));
 
-    LossGainVect->push_back(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price));
-    TotalValueVect->push_back(std::stof(*Amount) * std::stof(output[0]));
 
-
-    FinalOut->push_back(*Name + " | " + *Amount + " | " + *Price + " | " + output[0] + " | " + std::to_string(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price)));
+        FinalOut->push_back(*Name + " | " + *Amount + " | " + *Price + " | " + output[0] + " | " + std::to_string(std::stof(*Amount) * std::stof(output[0]) - std::stof(*Amount) * std::stof(*Price)));
+    } catch(std::invalid_argument &e){
+        //
+    }
+    
     output.clear();
     output.shrink_to_fit();
 }
