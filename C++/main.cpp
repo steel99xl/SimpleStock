@@ -123,7 +123,7 @@ std::vector<std::string> WebParser(std::string data, const char *crypto = ""){
 // Loads portfolio from disk
 std::vector<std::string> LoadPortfolio(std::string FilePath) {
     // Loads files and puts each line in a vector
-    std::vector<std::string> lines = {};
+    std::vector<std::string> lines;
     std::fstream File;
     //std::cout << FilePath << std::endl;
     File.open(FilePath.c_str(), std::ios::in);
