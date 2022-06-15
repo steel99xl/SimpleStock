@@ -417,20 +417,17 @@ void DisplayPortfolio(std::vector<std::string> *types,std::vector<std::string> *
     std::vector<std::string> PrintOut;
     std::vector<std::unique_ptr<std::thread> > ThreadVect;
 
-    std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
+    std::cout << "Please wait gathing info..." << std::endl;
 
     for(int i = 0; i < names->size(); i++){
-        ThreadedLookUp(&names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut);
-        //ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
+        ThreadVect.push_back(std::make_unique<std::thread>(ThreadedLookUp, &names->at(i), &amount->at(i), &types->at(i), &price->at(i) ,&LossGainVect, &TotalValueVect, &PrintOut));
     }
-    /*
+	
     for(unsigned long i = 0; i < ThreadVect.size(); i++){
-        std::cout << (float)i/(float)ThreadVect.size();
-        std::cout << "\r";
         ThreadVect.at(i)->join();
     }
-     */
-    std:: cout << "\n";
+    
+    std::cout << "TICKER | Amount | Buy Price | Current Price | Loss/Gain \n" << std::endl;
 
     for(unsigned long i = 0; i < PrintOut.size(); i++){
         std::cout << PrintOut[i] << std::endl;
